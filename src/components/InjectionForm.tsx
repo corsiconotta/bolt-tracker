@@ -69,14 +69,17 @@ export const InjectionForm: React.FC<Props> = ({ onSubmit }) => {
           Amount (mg)
         </label>
         <Input
-          type="number"
-          id="amount"
-          value={formData.amount || ''}
-          onChange={e => setFormData(prev => ({ ...prev, amount: parseFloat(e.target.value) || 0 }))}
-          step="0.1"
-          required
-          min="0"
-        />
+  type="number"
+  id="amount"
+  value={formData.amount ?? ''}
+  onChange={e => setFormData(prev => ({ 
+    ...prev, 
+    amount: e.target.value === '' ? '' : parseFloat(e.target.value)
+  }))}
+  step="0.1"
+  required
+  min="0"
+/>
       </div>
 
       <Button type="submit" className="w-full">
