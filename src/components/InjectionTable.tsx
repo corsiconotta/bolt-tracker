@@ -63,7 +63,14 @@ export const InjectionTable: React.FC<Props> = ({ injections, onEdit, onDelete }
                 <div className="flex items-center gap-4">
                   <div>
                     <div className="font-medium">{formatDate(entry.date)}</div>
-                    <div className="text-sm text-gray-500">{entry.location}</div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm text-gray-500">{entry.location}</span>
+                      <div 
+                        className={`w-2 h-2 rounded-full ${
+                          entry.amount > 0 ? 'bg-green-500' : 'bg-red-500'
+                        }`}
+                      />
+                    </div>
                   </div>
                 </div>
                 {isExpanded ? (
@@ -94,7 +101,7 @@ export const InjectionTable: React.FC<Props> = ({ injections, onEdit, onDelete }
                     <div className="col-span-2">
                       <div className="text-sm text-gray-500 flex items-center gap-1">
                         <Activity className="w-4 h-4" />
-                        Estimated
+                        Estimate
                       </div>
                       <div className="font-medium px-2 py-1 mt-1">
                         {Math.round(entry.serumTLevel || 0)} ng/dL
