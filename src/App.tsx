@@ -1,11 +1,13 @@
 import React from 'react';
 import { Activity } from 'lucide-react';
-import { collection, addDoc, deleteDoc, doc, updateDoc, getDocs, writeBatch, query, where } from 'firebase/firestore';
+import { collection, deleteDoc, doc, updateDoc, getDocs, writeBatch, getDoc, setDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { InjectionForm } from './components/InjectionForm';
 import { InjectionTable } from './components/InjectionTable';
 import { CurrentEstimates } from './components/CurrentEstimates';
-import { Injection, InjectionFormData } from './types';
+import { TestDropConstantSettings } from './components/TestDropConstantSettings';
+import { TLevelChart } from './components/TLevelChart';
+import { Injection, InjectionFormData, Settings } from './types';
 import {
   getDayNumber,
   getWeekNumber,
@@ -13,16 +15,60 @@ import {
   calculateTestEReleased,
   calculateSerumTLevel,
 } from './utils/calculations';
-import { INITIAL_SERUM_LEVEL } from './constants';
+import { DEFAULT_TEST_DROP_CONSTANT } from './constants';
+
+const SETTINGS_DOC_ID = 'app-settings';
 
 function App() {
   const [injections, setInjections] = React.useState<Injection[]>([]);
+  const [testDropConstant, setTestDropConstant] = React.useState(DEFAULT_TEST_DROP_CONSTANT);
+  const [isUpdatingSettings, setIsUpdatingSettings] = React.useState(false);
+  const [isLoading, setIsLoading] = React.useState(true);
 
   React.useEffect(() => {
-    loadInjections();
+    initializeApp();
   }, []);
 
-  const loadInjections = async () => {
+  const initializeApp = async () => {
+    setIsLoading(true);
+    try {
+      const settings = await loadSettings();
+      await loadInjections(settings.testDropConstant);
+    } catch (error) {
+      console.error("Error initializing app:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadSettings = async (): Promise<Settings> => {
+    try {
+      const settingsRef = doc(db, 'settings', SETTINGS_DOC_ID);
+      const settingsDoc = await getDoc(settingsRef);
+      
+      if (settingsDoc.exists()) {
+        const settings = settingsDoc.data() as Settings;
+        setTestDropConstant(settings.testDropConstant);
+        return settings;
+      } else {
+        const defaultSettings: Settings = {
+          testDropConstant: DEFAULT_TEST_DROP_CONSTANT
+        };
+        await setDoc(settingsRef, defaultSettings);
+        setTestDropConstant(DEFAULT_TEST_DROP_CONSTANT);
+        return defaultSettings;
+      }
+    } catch (error) {
+      console.error("Error loading settings:", error);
+      const defaultSettings: Settings = {
+        testDropConstant: DEFAULT_TEST_DROP_CONSTANT
+      };
+      setTestDropConstant(DEFAULT_TEST_DROP_CONSTANT);
+      return defaultSettings;
+    }
+  };
+
+  const loadInjections = async (dropConstant: number) => {
     try {
       const snapshot = await getDocs(collection(db, 'injections'));
       const loadedInjections = snapshot.docs.map(doc => ({
@@ -32,7 +78,7 @@ function App() {
       })) as Injection[];
 
       const sortedInjections = loadedInjections.sort((a, b) => a.dayNumber - b.dayNumber);
-      const recalculatedInjections = recalculateAll(sortedInjections);
+      const recalculatedInjections = recalculateAll(sortedInjections, dropConstant);
       setInjections(recalculatedInjections);
     } catch (error) {
       console.error("Error loading injections:", error);
@@ -51,14 +97,15 @@ function App() {
     isAutoFilled: true
   });
 
-  const recalculateAll = (injections: Injection[]): Injection[] => {
+  const recalculateAll = (injections: Injection[], dropConstant: number): Injection[] => {
     let previousInjection: Injection | undefined;
     
     return injections.map((injection) => {
       const testEInOil = calculateTestEInOil(injection, previousInjection);
       const serumTLevel = calculateSerumTLevel(
         { ...injection, testEInOil },
-        previousInjection
+        previousInjection,
+        dropConstant
       );
       
       const updatedInjection = {
@@ -71,6 +118,25 @@ function App() {
       previousInjection = updatedInjection;
       return updatedInjection;
     });
+  };
+
+  const handleUpdateTestDropConstant = async (newValue: number) => {
+    setIsUpdatingSettings(true);
+    try {
+      const settingsRef = doc(db, 'settings', SETTINGS_DOC_ID);
+      await setDoc(settingsRef, {
+        testDropConstant: newValue
+      });
+      
+      setTestDropConstant(newValue);
+      const recalculatedInjections = recalculateAll(injections, newValue);
+      setInjections(recalculatedInjections);
+    } catch (error) {
+      console.error("Error updating test drop constant:", error);
+      throw error;
+    } finally {
+      setIsUpdatingSettings(false);
+    }
   };
 
   const handleAddInjection = async (formData: InjectionFormData) => {
@@ -95,7 +161,7 @@ function App() {
       batch.set(pairedInjectionDoc, pairedInjection);
       
       await batch.commit();
-      await loadInjections();
+      await loadInjections(testDropConstant);
     } catch (error) {
       console.error("Error adding injection:", error);
       alert('Error saving injection. Please try again.');
@@ -118,7 +184,7 @@ function App() {
     try {
       const injectionRef = doc(db, 'injections', id);
       await updateDoc(injectionRef, { amount: newAmount });
-      await loadInjections();
+      await loadInjections(testDropConstant);
     } catch (error) {
       console.error("Error updating injection:", error);
       alert('Error updating injection. Please try again.');
@@ -127,11 +193,9 @@ function App() {
 
   const handleDelete = async (id: string) => {
     try {
-      // Find the injection to be deleted
       const injectionToDelete = injections.find(inj => inj.id === id);
       if (!injectionToDelete) return;
 
-      // Find the paired auto-filled injection
       const pairedInjection = injections.find(inj => 
         inj.isAutoFilled &&
         inj.date === injectionToDelete.date &&
@@ -139,17 +203,14 @@ function App() {
       );
 
       const batch = writeBatch(db);
-
-      // Delete the main injection
       batch.delete(doc(db, 'injections', id));
 
-      // Delete the paired injection if found
       if (pairedInjection?.id) {
         batch.delete(doc(db, 'injections', pairedInjection.id));
       }
 
       await batch.commit();
-      await loadInjections();
+      await loadInjections(testDropConstant);
     } catch (error) {
       console.error("Error deleting injection:", error);
       alert('Error deleting injection. Please try again.');
@@ -158,7 +219,18 @@ function App() {
 
   const currentLevel = injections.length > 0
     ? injections[injections.length - 1].serumTLevel!
-    : INITIAL_SERUM_LEVEL;
+    : 600;
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <Activity className="w-8 h-8 text-blue-600 animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -166,17 +238,25 @@ function App() {
         <header className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Activity className="w-6 h-6 text-blue-600" />
-            Tracker
+            T Level Calculator
           </h1>
         </header>
 
         <main className="space-y-6">
+          <TestDropConstantSettings
+            value={testDropConstant}
+            onUpdate={handleUpdateTestDropConstant}
+            isLoading={isUpdatingSettings}
+          />
+          
           <InjectionForm onSubmit={handleAddInjection} />
           <CurrentEstimates serumTLevel={currentLevel} />
           
+          <TLevelChart injections={injections} />
+          
           <div className="bg-transparent">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              History
+              Injection History
             </h2>
             <InjectionTable
               injections={injections}

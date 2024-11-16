@@ -19,3 +19,8 @@ export interface InjectionFormData {
   location: 'VG-D' | 'VG-S' | 'DT-S' | 'DT-D';
   amount: number;
 }
+
+export interface Settings {
+  id?: string;
+  testDropConstant: number;
+}
