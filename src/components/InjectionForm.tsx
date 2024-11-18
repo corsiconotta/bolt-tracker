@@ -27,7 +27,7 @@ export const InjectionForm: React.FC<Props> = ({ onSubmit }) => {
     <form onSubmit={handleSubmit} className="space-y-4 mb-6">
       <div>
         <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-1">
-          Injection Date
+          Date
         </label>
         <Input
           type="date"
@@ -83,7 +83,7 @@ export const InjectionForm: React.FC<Props> = ({ onSubmit }) => {
       </div>
 
       <Button type="submit" className="w-full">
-        Add Injection
+        Add
       </Button>
     </form>
   );

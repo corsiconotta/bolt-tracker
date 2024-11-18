@@ -238,30 +238,31 @@ function App() {
         <header className="mb-6">
           <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
             <Activity className="w-6 h-6 text-blue-600" />
-            T Level Calculator
+            Tracker
           </h1>
         </header>
 
         <main className="space-y-6">
-          <TestDropConstantSettings
-            value={testDropConstant}
-            onUpdate={handleUpdateTestDropConstant}
-            isLoading={isUpdatingSettings}
-          />
-          
           <InjectionForm onSubmit={handleAddInjection} />
           <CurrentEstimates serumTLevel={currentLevel} />
-          
           <TLevelChart injections={injections} />
           
           <div className="bg-transparent">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
-              Injection History
+              History
             </h2>
             <InjectionTable
               injections={injections}
               onEdit={handleEdit}
               onDelete={handleDelete}
+            />
+          </div>
+
+          <div className="flex justify-center border-t border-gray-200 pt-4">
+            <TestDropConstantSettings
+              value={testDropConstant}
+              onUpdate={handleUpdateTestDropConstant}
+              isLoading={isUpdatingSettings}
             />
           </div>
         </main>

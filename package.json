@@ -10,7 +10,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "chart.js": "^4.4.1",
+    "chart.js": "^4.4.6",
     "clsx": "^2.1.0",
     "firebase": "^10.8.0",
     "lucide-react": "^0.344.0",

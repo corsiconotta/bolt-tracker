@@ -13,7 +13,7 @@ export const CurrentEstimates: React.FC<Props> = ({ serumTLevel }) => {
         Current Estimates
       </h3>
       <div>
-        <p className="text-sm text-gray-600 mb-1">Estimated Serum T Level</p>
+        <p className="text-sm text-gray-600 mb-1">Morning of day after last injection</p>
         <p className="text-2xl font-semibold text-gray-900">
           {serumTLevel.toFixed(2)} <span className="text-base font-normal text-gray-600">ng/dL</span>
         </p>

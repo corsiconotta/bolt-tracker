@@ -2,6 +2,7 @@ import React from 'react';
 import { Input } from './ui/Input';
 import { Button } from './ui/Button';
 import { Settings as SettingsIcon } from 'lucide-react';
+import { Dialog } from './ui/Dialog';
 
 interface Props {
   value: number;
@@ -10,14 +11,13 @@ interface Props {
 }
 
 export const TestDropConstantSettings: React.FC<Props> = ({ value, onUpdate, isLoading }) => {
+  const [isOpen, setIsOpen] = React.useState(false);
   const [inputValue, setInputValue] = React.useState(value.toString());
 
   // Update input value when prop value changes
   React.useEffect(() => {
     setInputValue(value.toString());
   }, [value]);
-
-  const [isEditing, setIsEditing] = React.useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,79 +30,80 @@ export const TestDropConstantSettings: React.FC<Props> = ({ value, onUpdate, isL
 
     try {
       await onUpdate(newValue);
-      setIsEditing(false);
+      setIsOpen(false);
     } catch (error) {
-      console.error('Error updating test drop constant:', error);
-      alert('Failed to update test drop constant. Please try again.');
+      console.error('Error updating drop constant:', error);
+      alert('Failed to update drop constant. Please try again.');
     }
   };
 
-  if (!isEditing) {
-    return (
-      <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-between">
-        <div>
-          <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
-            <SettingsIcon className="w-5 h-5 text-blue-600" />
-            Test Drop Constant
-          </h3>
-          <p className="text-sm text-gray-600 mt-1">Current value: {value.toFixed(3)}</p>
-        </div>
-        <Button
-          variant="ghost"
-          onClick={() => setIsEditing(true)}
-          className="text-blue-600 hover:text-blue-700"
-        >
-          Modify
-        </Button>
-      </div>
-    );
-  }
-
   return (
-    <form onSubmit={handleSubmit} className="bg-white rounded-lg border border-gray-200 p-4">
-      <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2 mb-3">
-        <SettingsIcon className="w-5 h-5 text-blue-600" />
-        Modify Test Drop Constant
-      </h3>
-      <div className="space-y-4">
-        <div>
-          <label htmlFor="testDropConstant" className="block text-sm font-medium text-gray-700 mb-1">
-            New Value (0-1)
-          </label>
-          <Input
-            id="testDropConstant"
-            type="number"
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            step="0.001"
-            min="0"
-            max="1"
-            required
-            disabled={isLoading}
-          />
-        </div>
-        <div className="flex gap-2">
-          <Button
-            type="submit"
-            className="flex-1"
-            disabled={isLoading}
-          >
-            {isLoading ? 'Updating...' : 'Update'}
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            onClick={() => {
-              setIsEditing(false);
-              setInputValue(value.toString());
-            }}
-            disabled={isLoading}
-            className="flex-1"
-          >
-            Cancel
-          </Button>
-        </div>
-      </div>
-    </form>
+    <>
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={() => setIsOpen(true)}
+        className="text-gray-600 hover:text-gray-900"
+      >
+        <SettingsIcon className="w-4 h-4 mr-2" />
+        Drop Constant: {value.toFixed(3)}
+      </Button>
+
+      <Dialog
+        open={isOpen}
+        onClose={() => {
+          setIsOpen(false);
+          setInputValue(value.toString());
+        }}
+      >
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex items-center gap-2 mb-4">
+            <SettingsIcon className="w-5 h-5 text-blue-600" />
+            <h3 className="text-lg font-semibold text-gray-900">
+              Modify Drop Constant
+            </h3>
+          </div>
+
+          <div>
+            <label htmlFor="dropConstant" className="block text-sm font-medium text-gray-700 mb-1">
+              New Value (0-1)
+            </label>
+            <Input
+              id="dropConstant"
+              type="number"
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              step="0.001"
+              min="0"
+              max="1"
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="flex gap-2 pt-4">
+            <Button
+              type="submit"
+              className="flex-1"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Updating...' : 'Update'}
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => {
+                setIsOpen(false);
+                setInputValue(value.toString());
+              }}
+              disabled={isLoading}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </form>
+      </Dialog>
+    </>
   );
 };

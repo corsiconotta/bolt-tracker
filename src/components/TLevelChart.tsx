@@ -106,7 +106,7 @@ export const TLevelChart: React.FC<Props> = ({ injections }) => {
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-4">
-      <h3 className="text-base font-semibold text-gray-900 mb-4">T Level History (Last 30 Days)</h3>
+      <h3 className="text-base font-semibold text-gray-900 mb-4">Level History (Last 30 days)</h3>
       <div className="h-[300px]">
         <Line data={data} options={options} />
       </div>

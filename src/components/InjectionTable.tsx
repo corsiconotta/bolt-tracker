@@ -3,7 +3,7 @@ import { Injection } from '../types';
 import { CONCENTRATION } from '../constants';
 import { formatDate } from '../utils/format';
 import { Button } from './ui/Button';
-import { Activity, ChevronDown, ChevronUp, Edit2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Activity, ChevronDown, ChevronUp, Edit2, Trash2, ChevronLeft, ChevronRight, Moon } from 'lucide-react';
 
 interface Props {
   injections: Injection[];
@@ -46,6 +46,7 @@ export const InjectionTable: React.FC<Props> = ({ injections, onEdit, onDelete }
       <div className="space-y-2">
         {getCurrentEntries().map((entry, index) => {
           const isExpanded = expandedRows.has(entry.id || index.toString());
+          const doseInMl = entry.amount / CONCENTRATION;
           
           return (
             <div
@@ -86,8 +87,10 @@ export const InjectionTable: React.FC<Props> = ({ injections, onEdit, onDelete }
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <div>
                       <div className="text-sm text-gray-500">Dose (mL)</div>
-                      <div className="font-medium bg-red-50 px-2 py-1 rounded mt-1">
-                        {entry.amount > 0 ? (entry.amount / CONCENTRATION).toFixed(2) : '0.00'}
+                      <div className={`font-medium px-2 py-1 rounded mt-1 ${
+                        doseInMl > 0 ? 'bg-green-50' : 'bg-red-50'
+                      }`}>
+                        {doseInMl.toFixed(2)}
                       </div>
                     </div>
                     <div>
@@ -101,6 +104,7 @@ export const InjectionTable: React.FC<Props> = ({ injections, onEdit, onDelete }
                     <div className="col-span-2">
                       <div className="text-sm text-gray-500 flex items-center gap-1">
                         <Activity className="w-4 h-4" />
+                        <Moon className="w-4 h-4 ml-1" />
                         Estimate
                       </div>
                       <div className="font-medium px-2 py-1 mt-1">
@@ -177,5 +181,3 @@ export const InjectionTable: React.FC<Props> = ({ injections, onEdit, onDelete }
     </div>
   );
 };
-
-export default InjectionTable;

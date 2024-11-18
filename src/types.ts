@@ -2,7 +2,7 @@ export interface Injection {
   id?: string;
   date: string;
   timeOfDay: 'morning' | 'night';
-  location: 'VG-D' | 'VG-S' | 'DT-S' | 'DT-D';
+  location: 'VG-D' | 'VG-S' | 'DT-S' | 'DT-D' | 'NO';
   amount: number;
   dayNumber: number;
   weekNumber?: number;
@@ -16,7 +16,7 @@ export interface Injection {
 export interface InjectionFormData {
   date: string;
   timeOfDay: 'morning' | 'night';
-  location: 'VG-D' | 'VG-S' | 'DT-S' | 'DT-D';
+  location: 'VG-D' | 'VG-S' | 'DT-S' | 'DT-D' | 'NO';
   amount: number;
 }
 
