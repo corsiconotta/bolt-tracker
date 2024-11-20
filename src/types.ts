@@ -24,3 +24,18 @@ export interface Settings {
   id?: string;
   testDropConstant: number;
 }
+
+export interface Vial {
+  id?: string;
+  brand: string;
+  ester: string;
+  volume: number;
+  concentration: number;
+  remainingVolume: number;
+  dateOpened?: string;
+}
+
+export interface VialStock {
+  id?: string;
+  vials: Vial[];
+}

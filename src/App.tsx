@@ -1,6 +1,6 @@
 import React from 'react';
 import { Activity } from 'lucide-react';
-import { collection, deleteDoc, doc, updateDoc, getDocs, writeBatch, getDoc, setDoc } from 'firebase/firestore';
+import { collection, deleteDoc, doc, updateDoc, getDocs, writeBatch, getDoc, setDoc, addDoc } from 'firebase/firestore';
 import { db } from './firebase';
 import { InjectionForm } from './components/InjectionForm';
 import { InjectionTable } from './components/InjectionTable';
@@ -8,7 +8,8 @@ import { CurrentEstimates } from './components/CurrentEstimates';
 import { TestDropConstantSettings } from './components/TestDropConstantSettings';
 import { TLevelChart } from './components/TLevelChart';
 import { Statistics } from './components/Statistics';
-import { Injection, InjectionFormData, Settings } from './types';
+import { VialTracker } from './components/VialTracker';
+import { Injection, InjectionFormData, Settings, Vial } from './types';
 import {
   getDayNumber,
   getWeekNumber,
@@ -16,7 +17,7 @@ import {
   calculateTestEReleased,
   calculateSerumTLevel,
 } from './utils/calculations';
-import { DEFAULT_TEST_DROP_CONSTANT } from './constants';
+import { DEFAULT_TEST_DROP_CONSTANT, CONCENTRATION, INITIAL_SERUM_LEVEL } from './constants';
 
 const SETTINGS_DOC_ID = 'app-settings';
 
@@ -25,22 +26,16 @@ function App() {
   const [testDropConstant, setTestDropConstant] = React.useState(DEFAULT_TEST_DROP_CONSTANT);
   const [isUpdatingSettings, setIsUpdatingSettings] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(true);
+  const [activeVial, setActiveVial] = React.useState<Vial | null>(null);
+  const [vialStock, setVialStock] = React.useState<Vial[]>([]);
+
+  const currentLevel = React.useMemo(() => 
+    injections.length > 0 ? injections[injections.length - 1].serumTLevel! : INITIAL_SERUM_LEVEL
+  , [injections]);
 
   React.useEffect(() => {
     initializeApp();
   }, []);
-
-  const initializeApp = async () => {
-    setIsLoading(true);
-    try {
-      const settings = await loadSettings();
-      await loadInjections(settings.testDropConstant);
-    } catch (error) {
-      console.error("Error initializing app:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const loadSettings = async (): Promise<Settings> => {
     try {
@@ -61,11 +56,7 @@ function App() {
       }
     } catch (error) {
       console.error("Error loading settings:", error);
-      const defaultSettings: Settings = {
-        testDropConstant: DEFAULT_TEST_DROP_CONSTANT
-      };
-      setTestDropConstant(DEFAULT_TEST_DROP_CONSTANT);
-      return defaultSettings;
+      return { testDropConstant: DEFAULT_TEST_DROP_CONSTANT };
     }
   };
 
@@ -83,6 +74,109 @@ function App() {
       setInjections(recalculatedInjections);
     } catch (error) {
       console.error("Error loading injections:", error);
+    }
+  };
+
+  const initializeApp = async () => {
+    setIsLoading(true);
+    try {
+      const settings = await loadSettings();
+      await Promise.all([
+        loadInjections(settings.testDropConstant),
+        loadVials(),
+      ]);
+    } catch (error) {
+      console.error("Error initializing app:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const loadVials = async () => {
+    try {
+      // Load active vial
+      const activeVialDoc = await getDoc(doc(db, 'vials', 'active'));
+      if (activeVialDoc.exists()) {
+        setActiveVial(activeVialDoc.data() as Vial);
+      }
+
+      // Load vial stock
+      const stockSnapshot = await getDocs(collection(db, 'vials', 'stock', 'items'));
+      const vials = stockSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Vial[];
+      setVialStock(vials);
+    } catch (error) {
+      console.error("Error loading vials:", error);
+    }
+  };
+
+  const handleAddVial = async (vialData: Omit<Vial, 'id' | 'dateOpened' | 'remainingVolume'>) => {
+    try {
+      const newVial: Vial = {
+        ...vialData,
+        remainingVolume: vialData.volume,
+      };
+
+      const stockRef = collection(db, 'vials', 'stock', 'items');
+      await addDoc(stockRef, newVial);
+      await loadVials();
+    } catch (error) {
+      console.error("Error adding vial:", error);
+      throw error;
+    }
+  };
+
+  const handleOpenNewVial = async (vial: Vial) => {
+    try {
+      const batch = writeBatch(db);
+
+      // Remove vial from stock
+      if (vial.id) {
+        batch.delete(doc(db, 'vials', 'stock', 'items', vial.id));
+      }
+
+      // Set as active vial
+      const activeVialRef = doc(db, 'vials', 'active');
+      batch.set(activeVialRef, {
+        ...vial,
+        dateOpened: new Date().toISOString(),
+        remainingVolume: vial.volume,
+      });
+
+      await batch.commit();
+      await loadVials();
+    } catch (error) {
+      console.error("Error opening new vial:", error);
+      throw error;
+    }
+  };
+
+  const updateActiveVialVolume = async (amountInMg: number) => {
+    if (!activeVial) return;
+
+    const amountInMl = amountInMg / CONCENTRATION;
+    const newRemainingVolume = activeVial.remainingVolume - (amountInMl + 0.04);
+
+
+    if (newRemainingVolume < 0) {
+      throw new Error('Not enough volume in active vial');
+    }
+
+    try {
+      const activeVialRef = doc(db, 'vials', 'active');
+      await updateDoc(activeVialRef, {
+        remainingVolume: newRemainingVolume,
+      });
+      
+      setActiveVial(prev => prev ? {
+        ...prev,
+        remainingVolume: newRemainingVolume,
+      } : null);
+    } catch (error) {
+      console.error("Error updating vial volume:", error);
+      throw error;
     }
   };
 
@@ -142,6 +236,11 @@ function App() {
 
   const handleAddInjection = async (formData: InjectionFormData) => {
     try {
+      // First, try to update the vial volume
+      if (formData.amount > 0) {
+        await updateActiveVialVolume(formData.amount);
+      }
+
       const firstInjectionDate = injections.length > 0 ? new Date(injections[0].date) : undefined;
       
       const newInjection: Injection = {
@@ -218,10 +317,6 @@ function App() {
     }
   };
 
-  const currentLevel = injections.length > 0
-    ? injections[injections.length - 1].serumTLevel!
-    : 600;
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -254,6 +349,13 @@ function App() {
               <Statistics injections={injections} />
             </div>
           </div>
+
+          <VialTracker
+            activeVial={activeVial}
+            vialStock={vialStock}
+            onAddVial={handleAddVial}
+            onOpenNewVial={handleOpenNewVial}
+          />
 
           <TLevelChart injections={injections} />
           
