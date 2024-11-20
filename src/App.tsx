@@ -7,6 +7,7 @@ import { InjectionTable } from './components/InjectionTable';
 import { CurrentEstimates } from './components/CurrentEstimates';
 import { TestDropConstantSettings } from './components/TestDropConstantSettings';
 import { TLevelChart } from './components/TLevelChart';
+import { Statistics } from './components/Statistics';
 import { Injection, InjectionFormData, Settings } from './types';
 import {
   getDayNumber,
@@ -244,7 +245,16 @@ function App() {
 
         <main className="space-y-6">
           <InjectionForm onSubmit={handleAddInjection} />
-          <CurrentEstimates serumTLevel={currentLevel} />
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div className="col-span-2">
+              <CurrentEstimates serumTLevel={currentLevel} />
+            </div>
+            <div className="col-span-2">
+              <Statistics injections={injections} />
+            </div>
+          </div>
+
           <TLevelChart injections={injections} />
           
           <div className="bg-transparent">
