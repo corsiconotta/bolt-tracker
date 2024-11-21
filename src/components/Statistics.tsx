@@ -55,7 +55,11 @@ export const Statistics: React.FC<Props> = ({ injections }) => {
   const stats = calculateStats();
 
   return (
-    <div className="grid grid-cols-3 gap-2 bg-white rounded-lg border border-gray-200 p-3">
+    
+    
+   <div className="bg-white rounded-lg border border-gray-200 p-4">
+      <h3 className="text-base font-semibold text-gray-900 mb-4">Shot Stats</h3>
+      <div className="grid grid-cols-3 gap-2 bg-white rounded-lg border border-gray-200 p-3">
       <div className="text-center">
         <div className="flex items-center justify-center gap-1 text-xs text-gray-500 mb-1">
           <Activity className="w-3 h-3" />
@@ -86,5 +90,8 @@ export const Statistics: React.FC<Props> = ({ injections }) => {
         </div>
       </div>
     </div>
+    </div>
   );
 };
+
+

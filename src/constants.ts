@@ -5,5 +5,5 @@ export const DEFAULT_TEST_DROP_CONSTANT = 0.15;
 export const CONCENTRATION = 250;
 export const INITIAL_SERUM_LEVEL = 600;
 
-export const LOCATIONS = ['VG-D', 'VG-S', 'DT-S', 'DT-D', 'NO'] as const;
+export const LOCATIONS = ['VG-S', 'DT-S', 'VG-D', 'DT-D', 'NO'] as const;
 export const TIME_OPTIONS = ['morning', 'night'] as const;

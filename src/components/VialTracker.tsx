@@ -20,6 +20,8 @@ export const VialTracker: React.FC<Props> = ({
   onOpenNewVial,
 }) => {
   const [isAddDialogOpen, setIsAddDialogOpen] = React.useState(false);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = React.useState(false);
+  const [selectedVial, setSelectedVial] = React.useState<Vial | null>(null);
   const [newVial, setNewVial] = React.useState({
     brand: '',
     ester: '',
@@ -32,12 +34,11 @@ export const VialTracker: React.FC<Props> = ({
     return Math.floor(vial.remainingVolume / dailyUsage);
   };
 
- const calculateEstimatedEndDate = (daysRemaining: number) => {
+  const calculateEstimatedEndDate = (daysRemaining: number) => {
     const today = new Date(); // Start from today
     today.setDate(today.getDate() + daysRemaining); // Add the days remaining
     return formatDate(today);
-};
-
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -51,6 +52,19 @@ export const VialTracker: React.FC<Props> = ({
     });
   };
 
+  const handleOpenVial = (vial: Vial) => {
+    setSelectedVial(vial);
+    setIsConfirmDialogOpen(true);
+  };
+
+  const confirmOpenVial = async () => {
+    if (selectedVial) {
+      await onOpenNewVial(selectedVial);
+    }
+    setIsConfirmDialogOpen(false);
+    setSelectedVial(null);
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
       {/* Active Vial */}
@@ -59,7 +73,7 @@ export const VialTracker: React.FC<Props> = ({
           <Droplet className="w-5 h-5 text-blue-600" />
           Active Vial
         </h3>
-        
+
         {activeVial ? (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2 text-sm">
@@ -96,12 +110,11 @@ export const VialTracker: React.FC<Props> = ({
                   }}
                 />
               </div>
-            <p className="text-sm text-gray-500">
-    Lasts until: {calculateEstimatedEndDate(calculateDaysRemaining(activeVial))}
-    <br />
-    ({calculateDaysRemaining(activeVial)} days remaining)
-</p>
-
+              <p className="text-sm text-gray-500">
+                Lasts until: {calculateEstimatedEndDate(calculateDaysRemaining(activeVial))}
+                <br />
+                ({calculateDaysRemaining(activeVial)} days remaining)
+              </p>
             </div>
           </div>
         ) : (
@@ -115,7 +128,6 @@ export const VialTracker: React.FC<Props> = ({
           <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
             <Package className="w-5 h-5 text-blue-600" />
             Vials Left ({vialStock.length})
-            
           </h3>
           <Button
             variant="ghost"
@@ -144,8 +156,7 @@ export const VialTracker: React.FC<Props> = ({
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onOpenNewVial(vial)}
-                  
+                  onClick={() => handleOpenVial(vial)}
                   className="text-blue-600"
                 >
                   Open
@@ -156,7 +167,6 @@ export const VialTracker: React.FC<Props> = ({
         ) : (
           <p className="text-sm text-gray-500">No vials in stock</p>
         )}
-        
       </div>
 
       {/* Add Vial Dialog */}
@@ -236,6 +246,34 @@ export const VialTracker: React.FC<Props> = ({
             </Button>
           </div>
         </form>
+      </Dialog>
+
+      {/* Confirmation Dialog */}
+      <Dialog
+        open={isConfirmDialogOpen}
+        onClose={() => setIsConfirmDialogOpen(false)}
+      >
+        <div className="space-y-4">
+          <h3 className="text-lg font-semibold text-gray-900">
+            Confirm Open Vial
+          </h3>
+          <p className="text-sm text-gray-500">
+            Are you sure you want to open the vial{" "}
+            <strong>{selectedVial?.brand}</strong>?
+          </p>
+          <div className="flex gap-2">
+            <Button onClick={confirmOpenVial} className="flex-1">
+              Yes, Open
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() => setIsConfirmDialogOpen(false)}
+              className="flex-1"
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
       </Dialog>
     </div>
   );
