@@ -32,11 +32,12 @@ export const VialTracker: React.FC<Props> = ({
     return Math.floor(vial.remainingVolume / dailyUsage);
   };
 
-  const calculateEstimatedEndDate = (daysRemaining: number) => {
-    const date = new Date();
-    date.setDate(date.getDate() + daysRemaining);
-    return formatDate(date);
-  };
+ const calculateEstimatedEndDate = (daysRemaining: number) => {
+    const today = new Date(); // Start from today
+    today.setDate(today.getDate() + daysRemaining); // Add the days remaining
+    return formatDate(today);
+};
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -95,11 +96,12 @@ export const VialTracker: React.FC<Props> = ({
                   }}
                 />
               </div>
-              <p className="text-sm text-gray-500">
-                Estimated to last until: {calculateEstimatedEndDate(calculateDaysRemaining(activeVial))}
-                <br />
-                ({calculateDaysRemaining(activeVial)} days remaining at 0.12ml/day)
-              </p>
+            <p className="text-sm text-gray-500">
+    Lasts until: {calculateEstimatedEndDate(calculateDaysRemaining(activeVial))}
+    <br />
+    ({calculateDaysRemaining(activeVial)} days remaining)
+</p>
+
             </div>
           </div>
         ) : (
@@ -112,7 +114,8 @@ export const VialTracker: React.FC<Props> = ({
         <div className="flex justify-between items-center mb-3">
           <h3 className="text-base font-semibold text-gray-900 flex items-center gap-2">
             <Package className="w-5 h-5 text-blue-600" />
-            Vials in Stock ({vialStock.length})
+            Vials Left ({vialStock.length})
+            
           </h3>
           <Button
             variant="ghost"
@@ -142,7 +145,7 @@ export const VialTracker: React.FC<Props> = ({
                   variant="ghost"
                   size="sm"
                   onClick={() => onOpenNewVial(vial)}
-                  disabled={!!activeVial}
+                  
                   className="text-blue-600"
                 >
                   Open
@@ -153,6 +156,7 @@ export const VialTracker: React.FC<Props> = ({
         ) : (
           <p className="text-sm text-gray-500">No vials in stock</p>
         )}
+        
       </div>
 
       {/* Add Vial Dialog */}

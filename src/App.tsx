@@ -345,9 +345,6 @@ function App() {
             <div className="col-span-2">
               <CurrentEstimates serumTLevel={currentLevel} />
             </div>
-            <div className="col-span-2">
-              <Statistics injections={injections} />
-            </div>
           </div>
 
           <VialTracker
@@ -358,6 +355,10 @@ function App() {
           />
 
           <TLevelChart injections={injections} />
+
+          <div className="col-span-2">
+              <Statistics injections={injections} />
+            </div>
           
           <div className="bg-transparent">
             <h2 className="text-lg font-semibold text-gray-900 mb-4">
